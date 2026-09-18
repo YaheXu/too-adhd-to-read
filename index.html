@@ -61,6 +61,10 @@
     .screen { display: none; }
     body[data-screen="paste"] #screen-paste { display: flex; }
     body[data-screen="reader"] #screen-reader { display: flex; flex-direction: column; min-height: 100vh; }
+    body[data-screen="reader"][data-attention="rsvp"] #screen-reader {
+      height: 100dvh;
+      min-height: 100dvh;
+    }
 
     /* ---- Paste ---- */
     #screen-paste {
@@ -342,27 +346,58 @@
     .word.is-active { background: var(--active); }
 
     /* ---- RSVP ---- */
+    .toolbar-cluster {
+      display: contents;
+    }
+
     .rsvp-stage {
       display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: calc(100vh - 9rem);
-      gap: 1.6rem;
-      max-width: var(--measure);
+      grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+      flex: 0 0 auto;
+      min-height: 100%;
+      height: 100%;
       width: 100%;
-      justify-self: center;
+      max-width: var(--measure);
+      justify-items: center;
       text-align: center;
       padding: 0;
+      box-sizing: border-box;
+    }
+
+    .rsvp-word-slot {
+      grid-row: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .rsvp-rest {
+      grid-row: 3;
+      align-self: stretch;
+      justify-self: stretch;
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 1.15rem;
+      width: 100%;
+      padding: 1.15rem 0 0.35rem;
     }
 
     body[data-attention="rsvp"] .reader-body {
-      grid-template-columns: 1fr;
-      justify-items: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
     }
 
     body[data-attention="rsvp"] .article { display: none; }
-    body[data-attention="rsvp"] .rsvp-stage { display: flex; }
+    body[data-attention="rsvp"] .rsvp-stage { display: grid; }
 
     body[data-attention="rsvp"] #gloss {
       width: min(var(--gloss-width), 100%);
@@ -379,11 +414,15 @@
       font-size: 2.35rem;
       font-weight: 600;
       letter-spacing: 0.01em;
+      word-spacing: 0;
       color: var(--ink);
       min-height: 2.4em;
       padding: 0;
-      width: 100%;
+      width: auto;
+      max-width: 100%;
+      margin: 0;
       text-align: center;
+      white-space: nowrap;
       cursor: default;
     }
 
@@ -527,15 +566,40 @@
       }
 
       .toolbar {
-        gap: 0.4rem 0.5rem;
-        padding: 0.4rem 0.65rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.45rem 0.55rem;
+        padding: 0.5rem 0.75rem;
         font-size: 0.75rem;
       }
 
       .tool-group { gap: 0.25rem 0.35rem; }
 
       #btn-new {
+        order: 1;
         padding: 0.28rem 0.5rem;
+      }
+
+      .tool-font {
+        order: 2;
+      }
+
+      .toolbar-cluster {
+        display: flex;
+        order: 3;
+        flex: 1 1 100%;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.4rem 0.7rem;
+      }
+
+      .sentence-nav {
+        order: 4;
+        justify-content: center;
+        flex-wrap: wrap;
       }
 
       body[data-screen="reader"] .sentence-nav {
@@ -546,6 +610,7 @@
         z-index: 8;
         width: 100%;
         margin: 0;
+        justify-content: center;
         padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
         background: var(--page);
         border-top: 1px solid var(--rule);
@@ -560,8 +625,7 @@
       #rsvp-word { font-size: 1.85rem; }
 
       .rsvp-stage {
-        min-height: calc(100vh - 11rem);
-        padding-bottom: 1rem;
+        padding-bottom: 0;
       }
 
       #gloss-backdrop {
@@ -646,33 +710,35 @@
     <header class="toolbar">
       <button type="button" class="btn-quiet btn" id="btn-new">New text</button>
 
-      <div class="tool-group" role="group" aria-label="Source language">
-        <span class="tool-label">Text</span>
-        <div class="seg">
-          <label><input type="radio" name="lang" value="en" checked /><span>EN</span></label>
-          <label><input type="radio" name="lang" value="fr" /><span>FR</span></label>
+      <div class="toolbar-cluster">
+        <div class="tool-group" role="group" aria-label="Source language">
+          <span class="tool-label">Text</span>
+          <div class="seg">
+            <label><input type="radio" name="lang" value="en" checked /><span>EN</span></label>
+            <label><input type="radio" name="lang" value="fr" /><span>FR</span></label>
+          </div>
+        </div>
+
+        <div class="tool-group" role="group" aria-label="Gloss language">
+          <span class="tool-label">Gloss</span>
+          <div class="seg">
+            <label><input type="radio" name="gloss" value="zh" checked /><span>ZH</span></label>
+            <label><input type="radio" name="gloss" value="en" /><span>EN</span></label>
+            <label><input type="radio" name="gloss" value="fr" /><span>FR</span></label>
+          </div>
+        </div>
+
+        <div class="tool-group" role="group" aria-label="Attention">
+          <span class="tool-label">Attention</span>
+          <div class="seg">
+            <label><input type="radio" name="attention" value="off" checked /><span>Off</span></label>
+            <label><input type="radio" name="attention" value="spotlight" /><span>Spotlight</span></label>
+            <label><input type="radio" name="attention" value="rsvp" /><span>RSVP</span></label>
+          </div>
         </div>
       </div>
 
-      <div class="tool-group" role="group" aria-label="Gloss language">
-        <span class="tool-label">Gloss</span>
-        <div class="seg">
-          <label><input type="radio" name="gloss" value="zh" checked /><span>ZH</span></label>
-          <label><input type="radio" name="gloss" value="en" /><span>EN</span></label>
-          <label><input type="radio" name="gloss" value="fr" /><span>FR</span></label>
-        </div>
-      </div>
-
-      <div class="tool-group" role="group" aria-label="Attention">
-        <span class="tool-label">Attention</span>
-        <div class="seg">
-          <label><input type="radio" name="attention" value="off" checked /><span>Off</span></label>
-          <label><input type="radio" name="attention" value="spotlight" /><span>Spotlight</span></label>
-          <label><input type="radio" name="attention" value="rsvp" /><span>RSVP</span></label>
-        </div>
-      </div>
-
-      <div class="tool-group" role="group" aria-label="Font size">
+      <div class="tool-group tool-font" role="group" aria-label="Font size">
         <button type="button" class="btn-tiny" id="btn-font-down" aria-label="Smaller text">A−</button>
         <button type="button" class="btn-tiny" id="btn-font-up" aria-label="Larger text">A+</button>
       </div>
@@ -691,13 +757,17 @@
       <article class="article" id="article"></article>
 
       <div class="rsvp-stage" id="rsvp-stage">
-        <button type="button" id="rsvp-word" aria-label="Current word"></button>
-        <p id="rsvp-sentence"></p>
-        <div class="rsvp-controls">
-          <button type="button" class="btn-tiny" id="btn-rsvp-prev">Back</button>
-          <button type="button" class="btn-tiny" id="btn-rsvp-toggle">Play</button>
-          <label>WPM <input type="range" id="rsvp-wpm" min="120" max="500" step="10" value="240" /></label>
-          <span id="rsvp-wpm-label">240</span>
+        <div class="rsvp-word-slot">
+          <button type="button" id="rsvp-word" aria-label="Current word"></button>
+        </div>
+        <div class="rsvp-rest">
+          <p id="rsvp-sentence"></p>
+          <div class="rsvp-controls">
+            <button type="button" class="btn-tiny" id="btn-rsvp-prev">Back</button>
+            <button type="button" class="btn-tiny" id="btn-rsvp-toggle">Play</button>
+            <label>WPM <input type="range" id="rsvp-wpm" min="120" max="500" step="10" value="240" /></label>
+            <span id="rsvp-wpm-label">240</span>
+          </div>
         </div>
       </div>
 
