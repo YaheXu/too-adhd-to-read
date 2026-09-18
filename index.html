@@ -351,6 +351,10 @@
       display: contents;
     }
 
+    .attention-chip {
+      display: none;
+    }
+
     .tool-attention { order: 4; }
     .tool-font { order: 5; }
     .sentence-nav { order: 6; }
@@ -629,6 +633,49 @@
         justify-content: center;
       }
 
+      .tool-attention .seg {
+        display: none;
+      }
+
+      .attention-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.75rem;
+        letter-spacing: 0.04em;
+        padding: 0.15rem 0.2rem;
+        min-height: 2rem;
+        cursor: pointer;
+      }
+
+      .attention-dots {
+        display: flex;
+        align-items: center;
+        gap: 0.28rem;
+      }
+
+      .attention-dots i {
+        display: block;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--rule);
+      }
+
+      .attention-dots i.is-on {
+        background: var(--accent);
+      }
+
+      .article,
+      .rsvp-word-slot {
+        touch-action: pan-y;
+      }
+
       .sentence-nav {
         order: 1;
         position: static;
@@ -782,6 +829,14 @@
             <label><input type="radio" name="attention" value="spotlight" /><span>Spotlight</span></label>
             <label><input type="radio" name="attention" value="rsvp" /><span>RSVP</span></label>
           </div>
+          <button type="button" class="attention-chip" id="btn-attention-chip" aria-label="Attention: Off. Swipe to change.">
+            <span id="attention-chip-label">Off</span>
+            <span class="attention-dots" aria-hidden="true">
+              <i data-mode="off" class="is-on"></i>
+              <i data-mode="spotlight"></i>
+              <i data-mode="rsvp"></i>
+            </span>
+          </button>
         </div>
 
         <div class="sentence-nav">
@@ -842,7 +897,8 @@
     var FONT_MAX = 2.0;
     var FONT_STEP = 0.1;
     var DEFAULT_FONT = 1.25;
-    var TARGET_MAP = {
+    var ATTENTION_MODES = ["off", "spotlight", "rsvp"];
+    var ATTENTION_LABELS = { off: "Off", spotlight: "Spotlight", rsvp: "RSVP" };
       zh: { memory: "zh-CN", browser: ["zh-Hans", "zh"] },
       en: { memory: "en", browser: ["en"] },
       fr: { memory: "fr", browser: ["fr"] }
@@ -888,6 +944,9 @@
     var btnRsvpToggle = document.getElementById("btn-rsvp-toggle");
     var rsvpWpmInput = document.getElementById("rsvp-wpm");
     var rsvpWpmLabel = document.getElementById("rsvp-wpm-label");
+    var attentionChip = document.getElementById("btn-attention-chip");
+    var attentionChipLabel = document.getElementById("attention-chip-label");
+    var screenReader = document.getElementById("screen-reader");
 
     /* ---- config helpers ---- */
     function loadPrefs() {
@@ -927,6 +986,30 @@
       }
       if (mode === "spotlight") {
         setCurrentSentence(currentSentenceIndex, { preserveWord: true });
+      }
+      syncAttentionChip(mode);
+    }
+
+    function syncAttentionChip(mode) {
+      if (attentionChipLabel) attentionChipLabel.textContent = ATTENTION_LABELS[mode] || mode;
+      if (attentionChip) {
+        attentionChip.setAttribute("aria-label", "Attention: " + (ATTENTION_LABELS[mode] || mode) + ". Swipe to change.");
+      }
+      var dots = document.querySelectorAll(".attention-dots i");
+      for (var i = 0; i < dots.length; i++) {
+        dots[i].classList.toggle("is-on", dots[i].getAttribute("data-mode") === mode);
+      }
+      var radio = document.querySelector('input[name="attention"][value="' + mode + '"]');
+      if (radio && !radio.checked) radio.checked = true;
+    }
+
+    function cycleAttention(delta) {
+      var i = ATTENTION_MODES.indexOf(attention);
+      if (i < 0) i = 0;
+      var next = ATTENTION_MODES[(i + delta + ATTENTION_MODES.length) % ATTENTION_MODES.length];
+      setAttention(next);
+      if (next === "rsvp") {
+        glossZh.textContent = "Pause RSVP to look up the current word.";
       }
     }
 
@@ -1494,6 +1577,61 @@
         }
       });
     });
+
+    if (attentionChip) {
+      attentionChip.addEventListener("click", function () {
+        if (!isNarrow()) return;
+        cycleAttention(1);
+      });
+    }
+
+    var swipeStart = null;
+    var swipeSuppressClick = false;
+
+    function swipeIgnoreTarget(target) {
+      if (!target || !target.closest) return true;
+      return !!target.closest(".toolbar, .sentence-nav, .rsvp-controls, #gloss, #gloss-backdrop, input, textarea, select");
+    }
+
+    if (screenReader) {
+      screenReader.addEventListener("touchstart", function (event) {
+        if (!isNarrow() || document.body.getAttribute("data-screen") !== "reader") return;
+        if (document.body.classList.contains("gloss-open")) return;
+        if (event.touches.length !== 1) {
+          swipeStart = null;
+          return;
+        }
+        if (swipeIgnoreTarget(event.target) && !(event.target.closest && event.target.closest(".attention-chip"))) {
+          swipeStart = null;
+          return;
+        }
+        swipeStart = {
+          x: event.touches[0].clientX,
+          y: event.touches[0].clientY
+        };
+      }, { passive: true });
+
+      screenReader.addEventListener("touchend", function (event) {
+        if (!swipeStart) return;
+        var touch = event.changedTouches && event.changedTouches[0];
+        var start = swipeStart;
+        swipeStart = null;
+        if (!touch) return;
+        var dx = touch.clientX - start.x;
+        var dy = touch.clientY - start.y;
+        if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+        event.preventDefault();
+        swipeSuppressClick = true;
+        cycleAttention(dx < 0 ? 1 : -1);
+      });
+
+      screenReader.addEventListener("click", function (event) {
+        if (!swipeSuppressClick) return;
+        event.preventDefault();
+        event.stopPropagation();
+        swipeSuppressClick = false;
+      }, true);
+    }
 
     document.getElementById("btn-font-down").addEventListener("click", function () {
       fontSize = clamp(fontSize - FONT_STEP, FONT_MIN, FONT_MAX);
