@@ -346,13 +346,18 @@
     .word.is-active { background: var(--active); }
 
     /* ---- RSVP ---- */
-    .toolbar-cluster {
+    .toolbar-cluster,
+    .reader-dock {
       display: contents;
     }
 
+    .tool-attention { order: 4; }
+    .tool-font { order: 5; }
+    .sentence-nav { order: 6; }
+
     .rsvp-stage {
       display: none;
-      grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+      grid-template-rows: minmax(0, 0.58fr) auto minmax(0, 1fr);
       flex: 0 0 auto;
       min-height: 100%;
       height: 100%;
@@ -567,11 +572,11 @@
 
       .toolbar {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: space-between;
         align-items: center;
-        gap: 0.45rem 0.55rem;
-        padding: 0.5rem 0.75rem;
+        gap: 0.35rem 0.4rem;
+        padding: 0.45rem 0.65rem;
         font-size: 0.75rem;
       }
 
@@ -579,47 +584,82 @@
 
       #btn-new {
         order: 1;
+        flex-shrink: 0;
         padding: 0.28rem 0.5rem;
-      }
-
-      .tool-font {
-        order: 2;
       }
 
       .toolbar-cluster {
         display: flex;
-        order: 3;
-        flex: 1 1 100%;
+        order: 2;
+        flex: 1 1 auto;
         justify-content: center;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 0.4rem 0.7rem;
+        flex-wrap: nowrap;
+        gap: 0.35rem 0.5rem;
+        min-width: 0;
       }
 
-      .sentence-nav {
-        order: 4;
+      .tool-font {
+        order: 3;
+        flex-shrink: 0;
+      }
+
+      .reader-dock {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
-        flex-wrap: wrap;
-      }
-
-      body[data-screen="reader"] .sentence-nav {
+        order: 10;
         position: fixed;
         left: 0;
         right: 0;
         bottom: 0;
         z-index: 8;
         width: 100%;
+        gap: 0.4rem;
         margin: 0;
-        justify-content: center;
-        padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+        padding: 0.45rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
         background: var(--page);
         border-top: 1px solid var(--rule);
         box-sizing: border-box;
       }
 
+      .tool-attention {
+        order: 0;
+        justify-content: center;
+      }
+
+      .sentence-nav {
+        order: 1;
+        position: static;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        justify-content: center;
+        flex-wrap: wrap;
+        background: transparent;
+        border: 0;
+      }
+
+      body[data-screen="reader"] .sentence-nav {
+        position: static;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        width: 100%;
+        padding: 0;
+        background: transparent;
+        border: 0;
+      }
+
       .reader-body {
         grid-template-columns: 1fr;
-        padding: 0.85rem 0.85rem calc(4.8rem + env(safe-area-inset-bottom, 0px));
+        padding: 0.85rem 0.85rem calc(4.2rem + env(safe-area-inset-bottom, 0px));
+      }
+
+      body[data-attention="spotlight"] .reader-body,
+      body[data-attention="rsvp"] .reader-body {
+        padding-bottom: calc(6.6rem + env(safe-area-inset-bottom, 0px));
       }
 
       #rsvp-word { font-size: 1.85rem; }
@@ -727,15 +767,6 @@
             <label><input type="radio" name="gloss" value="fr" /><span>FR</span></label>
           </div>
         </div>
-
-        <div class="tool-group" role="group" aria-label="Attention">
-          <span class="tool-label">Attention</span>
-          <div class="seg">
-            <label><input type="radio" name="attention" value="off" checked /><span>Off</span></label>
-            <label><input type="radio" name="attention" value="spotlight" /><span>Spotlight</span></label>
-            <label><input type="radio" name="attention" value="rsvp" /><span>RSVP</span></label>
-          </div>
-        </div>
       </div>
 
       <div class="tool-group tool-font" role="group" aria-label="Font size">
@@ -743,12 +774,23 @@
         <button type="button" class="btn-tiny" id="btn-font-up" aria-label="Larger text">A+</button>
       </div>
 
-      <div class="sentence-nav">
-        <button type="button" class="btn-tiny" id="btn-sent-prev">Previous sentence</button>
-        <button type="button" class="btn-tiny" id="btn-sent-next">Next sentence</button>
-        <span id="sentence-status"></span>
-        <div class="progress-track" id="progress-meter" role="meter" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <div id="progress-fill"></div>
+      <div class="reader-dock">
+        <div class="tool-group tool-attention" role="group" aria-label="Attention">
+          <span class="tool-label">Attention</span>
+          <div class="seg">
+            <label><input type="radio" name="attention" value="off" checked /><span>Off</span></label>
+            <label><input type="radio" name="attention" value="spotlight" /><span>Spotlight</span></label>
+            <label><input type="radio" name="attention" value="rsvp" /><span>RSVP</span></label>
+          </div>
+        </div>
+
+        <div class="sentence-nav">
+          <button type="button" class="btn-tiny" id="btn-sent-prev">Previous sentence</button>
+          <button type="button" class="btn-tiny" id="btn-sent-next">Next sentence</button>
+          <span id="sentence-status"></span>
+          <div class="progress-track" id="progress-meter" role="meter" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div id="progress-fill"></div>
+          </div>
         </div>
       </div>
     </header>
