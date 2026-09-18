@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Too ADHD to read</title>
+  <style>
+    :root {
+      --page: #ffffff;
+      --sheet: #ffffff;
+      --ink: #1a1a1a;
+      --muted: #5c5c5c;
+      --rule: #e6e6e6;
+      --accent: #21565c;
+      --accent-soft: #e8f1f2;
+      --active: #e8f1f2;
+      --font-display: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-body: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-size: 1.25rem;
+      --text-ui: 0.8125rem;
+      --text-title: 2.05rem;
+      --text-lead: 1.0625rem;
+      --leading-body: 1.78;
+      --tracking-body: 0.028em;
+      --word-space: 0.1em;
+      --measure: 60ch;
+      --sheet-width: 40rem;
+      --gloss-width: 16.5rem;
+      --radius: 2px;
+      --gutter: 2.5rem;
+      --para-gap: 2.45em;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-size: var(--font-size);
+      font-weight: 400;
+      line-height: var(--leading-body);
+      letter-spacing: var(--tracking-body);
+      word-spacing: var(--word-space);
+      color: var(--ink);
+      background: var(--page);
+    }
+
+    button, textarea, input {
+      font-family: inherit;
+    }
+
+    h1, p { margin: 0; }
+
+    .screen { display: none; }
+    body[data-screen="paste"] #screen-paste { display: flex; }
+    body[data-screen="reader"] #screen-reader { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ---- Paste ---- */
+    #screen-paste {
+      min-height: 100vh;
+      align-items: stretch;
+      justify-content: center;
+      padding: 8vh 1.5rem 3.5rem;
+    }
+
+    .paste-sheet {
+      position: relative;
+      width: 100%;
+      max-width: var(--sheet-width);
+      padding: 0 0 0 var(--gutter);
+      background: transparent;
+    }
+
+    .paste-sheet::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.35rem;
+      bottom: 0.35rem;
+      width: 1px;
+      background: var(--rule);
+    }
+
+    .paste-title {
+      font-family: var(--font-display);
+      font-size: var(--text-title);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 0.7rem;
+    }
+
+    .paste-lead {
+      color: var(--muted);
+      font-size: var(--text-lead);
+      font-weight: 400;
+      line-height: 1.55;
+      letter-spacing: 0.01em;
+      word-spacing: 0.04em;
+      margin-bottom: 1.75rem;
+      max-width: 36ch;
+    }
+
+    #paste-input {
+      width: 100%;
+      min-height: 42vh;
+      resize: vertical;
+      padding: 0.85rem 0 1rem;
+      border: 0;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      border-radius: 0;
+      background: transparent;
+      color: var(--ink);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      letter-spacing: 0.02em;
+    }
+
+    #paste-input:focus {
+      outline: none;
+      border-bottom-color: var(--accent);
+    }
+
+    .paste-actions {
+      margin-top: 1.35rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .paste-hint {
+      margin-top: 1.1rem;
+      font-size: var(--text-ui);
+      line-height: 1.45;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: var(--sheet);
+      padding: 0.42rem 0.95rem;
+      border-radius: var(--radius);
+      font-size: var(--text-ui);
+      letter-spacing: 0.02em;
+      cursor: pointer;
+    }
+
+    .btn:hover { background: #1a464b; border-color: #1a464b; }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    .btn-quiet {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--rule);
+    }
+
+    .btn-quiet:hover { background: var(--sheet); }
+
+    .btn-tiny {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--rule);
+      padding: 0.22rem 0.5rem;
+      font-size: var(--text-ui);
+      border-radius: var(--radius);
+    }
+
+    .btn-tiny:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ---- Reader chrome ---- */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.95rem 1.85rem;
+      padding: 0.95rem 1.75rem 1.05rem;
+      background: var(--page);
+      border-bottom: 1px solid var(--rule);
+      font-family: var(--font-body);
+      font-size: var(--text-ui);
+      letter-spacing: 0.03em;
+      word-spacing: 0.02em;
+      line-height: 1.3;
+    }
+
+    .tool-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 0.7rem;
+    }
+
+    .tool-label {
+      color: var(--muted);
+      margin-right: 0.35rem;
+    }
+
+    .seg {
+      display: flex;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .seg label { display: block; cursor: pointer; }
+
+    .seg input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .seg span {
+      display: block;
+      padding: 0.22rem 0.55rem;
+      color: var(--ink);
+      background: transparent;
+    }
+
+    .seg input:checked + span {
+      background: var(--accent);
+      color: var(--sheet);
+    }
+
+    .seg input:focus-visible + span {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    .sentence-nav {
+      display: none;
+      align-items: center;
+      gap: 0.7rem 1.05rem;
+      width: 100%;
+      padding-top: 0.15rem;
+    }
+
+    body[data-attention="spotlight"] .sentence-nav,
+    body[data-attention="rsvp"] .sentence-nav { display: flex; }
+
+    #sentence-status { color: var(--muted); white-space: nowrap; }
+
+    .progress-track {
+      flex: 1;
+      min-width: 5.5rem;
+      max-width: 14rem;
+      height: 2px;
+      background: var(--rule);
+      border-radius: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    #progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+    }
+
+    /* ---- Layout ---- */
+    .reader-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--gloss-width);
+      gap: 1.75rem 2.5rem;
+      max-width: 64rem;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3.5rem;
+      align-items: start;
+    }
+
+    .article {
+      position: relative;
+      max-width: var(--measure);
+      justify-self: center;
+      width: 100%;
+      padding-left: var(--gutter);
+      overflow-wrap: anywhere;
+    }
+
+    .article::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.2rem;
+      bottom: 0.2rem;
+      width: 1px;
+      background: var(--rule);
+    }
+
+    .article p {
+      margin: 0 0 var(--para-gap);
+      text-align: left;
+    }
+
+    .sentence { display: inline; }
+
+    body[data-attention="spotlight"] .sentence { opacity: 0.28; }
+    body[data-attention="spotlight"] .sentence.is-current { opacity: 1; }
+
+    .word {
+      appearance: none;
+      background: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      color: inherit;
+      letter-spacing: inherit;
+      word-spacing: inherit;
+      cursor: pointer;
+      border-radius: var(--radius);
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      text-underline-offset: 0.18em;
+      text-decoration-thickness: 1px;
+    }
+
+    .word:hover,
+    .word:focus-visible {
+      text-decoration-color: var(--accent);
+      outline: none;
+    }
+
+    .word.is-active { background: var(--active); }
+
+    /* ---- RSVP ---- */
+    .rsvp-stage {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 9rem);
+      gap: 1.6rem;
+      max-width: var(--measure);
+      width: 100%;
+      justify-self: center;
+      text-align: center;
+      padding: 0;
+    }
+
+    body[data-attention="rsvp"] .reader-body {
+      grid-template-columns: 1fr;
+      justify-items: center;
+    }
+
+    body[data-attention="rsvp"] .article { display: none; }
+    body[data-attention="rsvp"] .rsvp-stage { display: flex; }
+
+    body[data-attention="rsvp"] #gloss {
+      width: min(var(--gloss-width), 100%);
+      border-left: 0;
+      padding-left: 0;
+      text-align: center;
+    }
+
+    #rsvp-word {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      font-family: var(--font-body);
+      font-size: 2.35rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--ink);
+      min-height: 2.4em;
+      padding: 0;
+      width: 100%;
+      text-align: center;
+      cursor: default;
+    }
+
+    #rsvp-word .lead {
+      color: #c0392b;
+      font-weight: 700;
+    }
+
+    body[data-attention="rsvp"][data-rsvp="paused"] #rsvp-word {
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: var(--accent);
+      text-underline-offset: 0.18em;
+    }
+
+    #rsvp-sentence {
+      max-width: var(--measure);
+      width: 100%;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    #rsvp-sentence .sentence { opacity: 1; }
+    #rsvp-sentence .word.is-active {
+      color: var(--ink);
+      background: var(--active);
+    }
+
+    body[data-attention="rsvp"][data-rsvp="playing"] #rsvp-sentence .word {
+      cursor: default;
+      text-decoration: none;
+    }
+
+    .rsvp-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem 0.75rem;
+      font-size: var(--text-ui);
+      color: var(--muted);
+      width: 100%;
+    }
+
+    .rsvp-controls input[type="range"] {
+      width: 7.5rem;
+      accent-color: var(--accent);
+    }
+
+    /* ---- Gloss ---- */
+    #gloss {
+      position: sticky;
+      top: 3.8rem;
+      padding: 0.15rem 0 0 1.1rem;
+      background: transparent;
+      border: 0;
+      border-left: 1px solid var(--rule);
+      border-radius: 0;
+      font-size: 0.92rem;
+      letter-spacing: 0.01em;
+      word-spacing: 0.04em;
+      line-height: 1.5;
+    }
+
+    .gloss-kicker {
+      font-size: var(--text-ui);
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+
+    #gloss-word {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 1.15rem;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.35rem;
+    }
+
+    #gloss-zh {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 2.9em;
+      margin-bottom: 0.5rem;
+    }
+
+    #gloss-note {
+      font-size: var(--text-ui);
+      color: var(--muted);
+      margin-bottom: 0.85rem;
+    }
+
+    .gloss-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.35rem;
+    }
+
+    body[data-attention="rsvp"] .gloss-actions {
+      align-items: center;
+    }
+
+    @media (max-width: 800px) {
+      :root { --gutter: 1.35rem; }
+
+      #screen-paste {
+        padding: 6vh 1.1rem calc(2.5rem + env(safe-area-inset-bottom, 0px));
+      }
+
+      .paste-title { font-size: 1.7rem; }
+
+      #paste-input {
+        min-height: 36vh;
+        font-size: 16px;
+      }
+
+      .btn,
+      .btn-tiny,
+      .seg span {
+        min-height: 2.5rem;
+        padding: 0.45rem 0.7rem;
+      }
+
+      .toolbar {
+        gap: 0.85rem 1.25rem;
+        padding: 0.8rem 1rem;
+      }
+
+      .reader-body {
+        grid-template-columns: 1fr;
+        padding: 1.25rem 1rem calc(10.5rem + env(safe-area-inset-bottom, 0px));
+      }
+
+      #rsvp-word { font-size: 1.85rem; }
+
+      .rsvp-stage {
+        min-height: calc(100vh - 14rem);
+        padding-bottom: 1rem;
+      }
+
+      #gloss {
+        position: fixed;
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 0.85rem 1.1rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+        background: var(--sheet);
+        border-left: 0;
+        border-top: 1px solid var(--rule);
+        z-index: 6;
+        text-align: left;
+      }
+
+      .gloss-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body data-screen="paste" data-attention="off" data-rsvp="paused">
+  <main id="screen-paste" class="screen">
+    <div class="paste-sheet">
+      <h1 class="paste-title">Too ADHD to read</h1>
+      <p class="paste-lead">Put a passage on this page. It turns into a calmer layout, with a short gloss when you click a word.</p>
+      <textarea id="paste-input" placeholder="Paste here." spellcheck="false"></textarea>
+      <div class="paste-actions">
+        <button type="button" class="btn-quiet btn" id="btn-clear" disabled>Clear</button>
+        <button type="button" class="btn" id="btn-start" disabled>Start reading</button>
+      </div>
+      <p class="paste-hint">English by default. Press Enter for a new line; a blank line starts a new paragraph.</p>
+    </div>
+  </main>
+
+  <div id="screen-reader" class="screen">
+    <header class="toolbar">
+      <button type="button" class="btn-quiet btn" id="btn-new">New text</button>
+
+      <div class="tool-group" role="group" aria-label="Source language">
+        <span class="tool-label">Text</span>
+        <div class="seg">
+          <label><input type="radio" name="lang" value="en" checked /><span>EN</span></label>
+          <label><input type="radio" name="lang" value="fr" /><span>FR</span></label>
+        </div>
+      </div>
+
+      <div class="tool-group" role="group" aria-label="Gloss language">
+        <span class="tool-label">Gloss</span>
+        <div class="seg">
+          <label><input type="radio" name="gloss" value="zh" checked /><span>ZH</span></label>
+          <label><input type="radio" name="gloss" value="en" /><span>EN</span></label>
+          <label><input type="radio" name="gloss" value="fr" /><span>FR</span></label>
+        </div>
+      </div>
+
+      <div class="tool-group" role="group" aria-label="Attention">
+        <span class="tool-label">Attention</span>
+        <div class="seg">
+          <label><input type="radio" name="attention" value="off" checked /><span>Off</span></label>
+          <label><input type="radio" name="attention" value="spotlight" /><span>Spotlight</span></label>
+          <label><input type="radio" name="attention" value="rsvp" /><span>RSVP</span></label>
+        </div>
+      </div>
+
+      <div class="tool-group" role="group" aria-label="Font size">
+        <button type="button" class="btn-tiny" id="btn-font-down" aria-label="Smaller text">A−</button>
+        <button type="button" class="btn-tiny" id="btn-font-up" aria-label="Larger text">A+</button>
+      </div>
+
+      <div class="sentence-nav">
+        <button type="button" class="btn-tiny" id="btn-sent-prev">Previous sentence</button>
+        <button type="button" class="btn-tiny" id="btn-sent-next">Next sentence</button>
+        <span id="sentence-status"></span>
+        <div class="progress-track" id="progress-meter" role="meter" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="progress-fill"></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="reader-body">
+      <article class="article" id="article"></article>
+
+      <div class="rsvp-stage" id="rsvp-stage">
+        <button type="button" id="rsvp-word" aria-label="Current word"></button>
+        <p id="rsvp-sentence"></p>
+        <div class="rsvp-controls">
+          <button type="button" class="btn-tiny" id="btn-rsvp-prev">Back</button>
+          <button type="button" class="btn-tiny" id="btn-rsvp-toggle">Play</button>
+          <label>WPM <input type="range" id="rsvp-wpm" min="120" max="500" step="10" value="240" /></label>
+          <span id="rsvp-wpm-label">240</span>
+        </div>
+      </div>
+
+      <aside id="gloss" aria-live="polite">
+        <p class="gloss-kicker">Gloss</p>
+        <p id="gloss-word">Click a word</p>
+        <p id="gloss-zh">A short Chinese meaning will appear here.</p>
+        <p id="gloss-note">Lookups send only the clicked word, unless you retranslate with the sentence.</p>
+        <div class="gloss-actions">
+          <button type="button" class="btn-tiny" id="btn-speak" disabled>Speak</button>
+          <button type="button" class="btn-tiny" id="btn-retranslate" disabled>Retranslate with this sentence</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    /* ---- config ---- */
+    var STORAGE_FONT = "easyread-font-size";
+    var STORAGE_LANG = "easyread-source-lang";
+    var STORAGE_GLOSS = "easyread-gloss-lang";
+    var FONT_MIN = 1.0;
+    var FONT_MAX = 2.0;
+    var FONT_STEP = 0.1;
+    var DEFAULT_FONT = 1.25;
+    var TARGET_MAP = {
+      zh: { memory: "zh-CN", browser: ["zh-Hans", "zh"] },
+      en: { memory: "en", browser: ["en"] },
+      fr: { memory: "fr", browser: ["fr"] }
+    };
+
+    /* ---- state ---- */
+    var sourceLang = "en";
+    var glossLang = "zh";
+    var fontSize = DEFAULT_FONT;
+    var attention = "off";
+    var currentSentenceIndex = 0;
+    var sentenceNodes = [];
+    var wordNodes = [];
+    var selectedWord = null;
+    var selectedSentenceText = "";
+    var lookupCache = Object.create(null);
+    var translatorCache = Object.create(null);
+    var lookupSeq = 0;
+
+    var rsvpIndex = 0;
+    var rsvpPaused = true;
+    var rsvpTimer = null;
+    var rsvpWpm = 240;
+
+    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* ---- elements ---- */
+    var pasteInput = document.getElementById("paste-input");
+    var btnStart = document.getElementById("btn-start");
+    var btnClear = document.getElementById("btn-clear");
+    var article = document.getElementById("article");
+    var glossWord = document.getElementById("gloss-word");
+    var glossZh = document.getElementById("gloss-zh");
+    var glossNote = document.getElementById("gloss-note");
+    var btnSpeak = document.getElementById("btn-speak");
+    var btnRetranslate = document.getElementById("btn-retranslate");
+    var sentenceStatus = document.getElementById("sentence-status");
+    var progressFill = document.getElementById("progress-fill");
+    var progressMeter = document.getElementById("progress-meter");
+    var rsvpWordEl = document.getElementById("rsvp-word");
+    var rsvpSentenceEl = document.getElementById("rsvp-sentence");
+    var btnRsvpToggle = document.getElementById("btn-rsvp-toggle");
+    var rsvpWpmInput = document.getElementById("rsvp-wpm");
+    var rsvpWpmLabel = document.getElementById("rsvp-wpm-label");
+
+    /* ---- config helpers ---- */
+    function loadPrefs() {
+      var storedFont = parseFloat(localStorage.getItem(STORAGE_FONT));
+      if (!isNaN(storedFont)) fontSize = clamp(storedFont, FONT_MIN, FONT_MAX);
+      var storedLang = localStorage.getItem(STORAGE_LANG);
+      if (storedLang === "en" || storedLang === "fr") sourceLang = storedLang;
+      var storedGloss = localStorage.getItem(STORAGE_GLOSS);
+      if (storedGloss === "zh" || storedGloss === "en" || storedGloss === "fr") glossLang = storedGloss;
+      applyFont();
+      var langRadio = document.querySelector('input[name="lang"][value="' + sourceLang + '"]');
+      if (langRadio) langRadio.checked = true;
+      var glossRadio = document.querySelector('input[name="gloss"][value="' + glossLang + '"]');
+      if (glossRadio) glossRadio.checked = true;
+    }
+
+    function clamp(n, min, max) {
+      return Math.min(max, Math.max(min, n));
+    }
+
+    function applyFont() {
+      document.documentElement.style.setProperty("--font-size", fontSize.toFixed(2) + "rem");
+      localStorage.setItem(STORAGE_FONT, String(fontSize));
+    }
+
+    function setScreen(name) {
+      document.body.setAttribute("data-screen", name);
+    }
+
+    function setAttention(mode) {
+      attention = mode;
+      document.body.setAttribute("data-attention", mode);
+      if (mode !== "rsvp") stopRsvp(true);
+      if (mode === "rsvp") {
+        setRsvpPaused(true);
+        renderRsvpWord();
+      }
+      if (mode === "spotlight") {
+        setCurrentSentence(currentSentenceIndex, { preserveWord: true });
+      }
+    }
+
+    /* ---- cleanup ---- */
+    function stripMarkdownNoise(t) {
+      t = t.replace(/```[\s\S]*?```/g, function (block) {
+        return block.replace(/```[^\n]*\n?/g, "").replace(/```/g, "");
+      });
+      t = t.replace(/^\s{0,3}#{1,6}\s+/gm, "");
+      t = t.replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g, "$2");
+      t = t.replace(/(\*|_)(?=\S)([^*\n]+?)\1/g, "$2");
+      t = t.replace(/`([^`]+)`/g, "$1");
+      t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+      t = t.replace(/^\s{0,3}[-*+]\s+/gm, "");
+      t = t.replace(/^\s{0,3}\d+\.\s+/gm, "");
+      t = t.replace(/^\s*\|?[ \t]*:?-{3,}:?[ \t]*(\|[ \t]*:?-{3,}:?[ \t]*)+\|?\s*$/gm, "");
+      t = t.replace(/^\s*\|/gm, "");
+      t = t.replace(/\|/g, "  ");
+      return t;
+    }
+
+    function cleanupPastedText(raw) {
+      var t = String(raw || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      t = t.replace(/(\p{L}|\p{N})-\n(\p{L}|\p{N})/gu, "$1$2");
+      t = stripMarkdownNoise(t);
+      t = t.replace(/[ \t]+\n/g, "\n");
+      t = t.replace(/[ \t]{2,}/g, " ");
+      t = t.replace(/\n{3,}/g, "\n\n");
+      return t.trim();
+    }
+
+    /* ---- tokenize ---- */
+    function splitParagraphs(text) {
+      return text.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
+    }
+
+    function splitSentences(text) {
+      if (typeof Intl !== "undefined" && Intl.Segmenter) {
+        var locale = sourceLang === "fr" ? "fr" : "en";
+        var seg = new Intl.Segmenter(locale, { granularity: "sentence" });
+        var out = [];
+        var it = seg.segment(text)[Symbol.iterator]();
+        var step = it.next();
+        while (!step.done) {
+          var piece = step.value.segment.trim();
+          if (piece) out.push(piece);
+          step = it.next();
+        }
+        if (out.length) return out;
+      }
+      return text.split(/(?<=[.!?…])\s+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+
+    function lookupKey(raw) {
+      var w = String(raw || "").replace(/^[\p{P}\p{S}]+|[\p{P}\p{S}]+$/gu, "");
+      w = w.replace(/^(?:l|d|j|n|m|s|t|c|qu)['’]/i, "");
+      return w;
+    }
+
+    var WORD_RE = /[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu;
+
+    function fillSentence(span, sent) {
+      WORD_RE.lastIndex = 0;
+      var last = 0;
+      var m;
+      while ((m = WORD_RE.exec(sent))) {
+        if (m.index > last) {
+          span.appendChild(document.createTextNode(sent.slice(last, m.index)));
+        }
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "word";
+        btn.textContent = m[0];
+        btn.dataset.lookup = lookupKey(m[0]);
+        span.appendChild(btn);
+        last = m.index + m[0].length;
+      }
+      if (last < sent.length) {
+        span.appendChild(document.createTextNode(sent.slice(last)));
+      }
+    }
+
+    function renderArticle(text) {
+      article.innerHTML = "";
+      var paragraphs = splitParagraphs(text);
+      var index = 0;
+      for (var i = 0; i < paragraphs.length; i++) {
+        var p = document.createElement("p");
+        var lines = paragraphs[i].split("\n");
+        for (var li = 0; li < lines.length; li++) {
+          var line = lines[li].trim();
+          if (!line) continue;
+          var sentences = splitSentences(line);
+          for (var j = 0; j < sentences.length; j++) {
+            var span = document.createElement("span");
+            span.className = "sentence";
+            span.dataset.index = String(index);
+            fillSentence(span, sentences[j]);
+            p.appendChild(span);
+            p.appendChild(document.createTextNode(" "));
+            index += 1;
+          }
+          if (li < lines.length - 1) {
+            p.appendChild(document.createElement("br"));
+          }
+        }
+        if (p.childNodes.length) article.appendChild(p);
+      }
+      sentenceNodes = Array.prototype.slice.call(article.querySelectorAll(".sentence"));
+      wordNodes = Array.prototype.slice.call(article.querySelectorAll(".word"));
+      currentSentenceIndex = 0;
+      setCurrentSentence(0);
+      clearGloss();
+    }
+
+    function sentenceText(node) {
+      return (node && node.textContent ? node.textContent : "").replace(/\s+/g, " ").trim();
+    }
+
+    function wordIndexOf(btn) {
+      var idx = wordNodes.indexOf(btn);
+      return idx < 0 ? 0 : idx;
+    }
+
+    function firstWordIndexInSentence(sentIndex) {
+      var sent = sentenceNodes[sentIndex];
+      if (!sent) return 0;
+      var btn = sent.querySelector(".word");
+      return btn ? wordIndexOf(btn) : 0;
+    }
+
+    function updateProgressUi() {
+      var sTotal = sentenceNodes.length;
+      var wTotal = wordNodes.length;
+      if (!sTotal) {
+        sentenceStatus.textContent = "";
+        progressFill.style.width = "0%";
+        progressMeter.setAttribute("aria-valuenow", "0");
+        return;
+      }
+      sentenceStatus.textContent = (currentSentenceIndex + 1) + " / " + sTotal;
+      var pct = wTotal
+        ? ((rsvpIndex + 1) / wTotal) * 100
+        : ((currentSentenceIndex + 1) / sTotal) * 100;
+      pct = Math.min(100, Math.max(0, pct));
+      progressFill.style.width = pct + "%";
+      progressMeter.setAttribute("aria-valuenow", String(Math.round(pct)));
+    }
+
+    function applySentenceHighlight() {
+      for (var n = 0; n < sentenceNodes.length; n++) {
+        sentenceNodes[n].classList.toggle("is-current", n === currentSentenceIndex);
+      }
+      updateProgressUi();
+      if (attention === "spotlight" && sentenceNodes[currentSentenceIndex]) {
+        sentenceNodes[currentSentenceIndex].scrollIntoView({
+          block: "center",
+          behavior: reducedMotion ? "auto" : "smooth"
+        });
+      }
+    }
+
+    function setCurrentSentence(i, opts) {
+      opts = opts || {};
+      if (!sentenceNodes.length) {
+        updateProgressUi();
+        return;
+      }
+      currentSentenceIndex = clamp(i, 0, sentenceNodes.length - 1);
+      if (!opts.preserveWord) {
+        rsvpIndex = firstWordIndexInSentence(currentSentenceIndex);
+      }
+      if (attention === "rsvp") renderRsvpWord();
+      else applySentenceHighlight();
+    }
+
+    function jumpSentence(delta) {
+      if (attention === "rsvp") {
+        setRsvpPaused(true);
+      }
+      setCurrentSentence(currentSentenceIndex + delta);
+    }
+
+    /* ---- translate ---- */
+    function cacheKey(word, withSentence, lang) {
+      return lang + "|" + glossLang + "|" + (withSentence ? "s|" : "w|") + word;
+    }
+
+    function glossLabel() {
+      if (glossLang === "zh") return "Chinese";
+      if (glossLang === "fr") return "French";
+      return "English";
+    }
+
+    async function translateWithBrowser(text, lang) {
+      if (!("Translator" in self)) return null;
+      var targets = (TARGET_MAP[glossLang] && TARGET_MAP[glossLang].browser) || ["en"];
+      var lastErr = null;
+      for (var i = 0; i < targets.length; i++) {
+        var opts = { sourceLanguage: lang, targetLanguage: targets[i] };
+        try {
+          var availability = await Translator.availability(opts);
+          if (availability !== "available") continue;
+          var key = lang + "|" + opts.targetLanguage;
+          if (!translatorCache[key]) {
+            translatorCache[key] = await Translator.create(opts);
+          }
+          return translatorCache[key].translate(text);
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      if (lastErr) return null;
+      return null;
+    }
+
+    async function translateWithMyMemory(text, lang) {
+      var target = (TARGET_MAP[glossLang] && TARGET_MAP[glossLang].memory) || "en";
+      var pair = (lang === "fr" ? "fr" : "en") + "|" + target;
+      var url = "https://api.mymemory.translated.net/get?q=" +
+        encodeURIComponent(text) + "&langpair=" + encodeURIComponent(pair);
+      var res = await fetch(url);
+      if (!res.ok) throw new Error("http");
+      var data = await res.json();
+      var translated = data && data.responseData && data.responseData.translatedText;
+      if (!translated) throw new Error("empty");
+      return translated;
+    }
+
+    async function lookup(word, sentence, useSentence) {
+      var text = useSentence && sentence ? sentence : word;
+      if (text.length > 450) text = text.slice(0, 450);
+      if (sourceLang === glossLang) {
+        return { text: text, via: "same" };
+      }
+      var key = cacheKey(text, !!(useSentence && sentence), sourceLang);
+      if (lookupCache[key]) return { text: lookupCache[key], via: "cache" };
+
+      var via = "mymemory";
+      var translated = null;
+      try {
+        translated = await translateWithBrowser(text, sourceLang);
+        if (translated) via = "browser";
+      } catch (err) {
+        translated = null;
+      }
+      if (!translated) {
+        translated = await translateWithMyMemory(text, sourceLang);
+      }
+      lookupCache[key] = translated;
+      return { text: translated, via: via };
+    }
+
+    function clearGloss() {
+      selectedWord = null;
+      selectedSentenceText = "";
+      glossWord.textContent = "Click a word";
+      glossZh.textContent = attention === "rsvp" && !rsvpPaused
+        ? "Pause RSVP to look up the current word."
+        : "A short " + glossLabel() + " meaning will appear here.";
+      glossNote.textContent = "Lookups send only the clicked word, unless you retranslate with the sentence.";
+      btnSpeak.disabled = true;
+      btnRetranslate.disabled = true;
+      for (var i = 0; i < wordNodes.length; i++) wordNodes[i].classList.remove("is-active");
+    }
+
+    function setActiveWordButton(btn) {
+      for (var i = 0; i < wordNodes.length; i++) {
+        wordNodes[i].classList.toggle("is-active", wordNodes[i] === btn);
+      }
+    }
+
+    async function showGloss(word, sentence, btn, useSentence) {
+      if (!word) return;
+      selectedWord = word;
+      selectedSentenceText = sentence || "";
+      if (btn) setActiveWordButton(btn);
+      else setActiveWordButton(null);
+
+      glossWord.textContent = word;
+      glossZh.textContent = "Looking up…";
+      glossNote.textContent = useSentence
+        ? "Sending this sentence to a third-party dictionary."
+        : "Sending “" + word + "” to a third-party dictionary.";
+      btnSpeak.disabled = false;
+      btnRetranslate.disabled = !selectedSentenceText;
+
+      var seq = ++lookupSeq;
+      try {
+        var result = await lookup(word, sentence, useSentence);
+        if (seq !== lookupSeq) return;
+        glossZh.textContent = result.text;
+        if (result.via === "same") {
+          glossNote.textContent = "Gloss language matches the text. Nothing was sent.";
+        } else if (result.via === "browser") {
+          glossNote.textContent = useSentence
+            ? "Translated on this device from the current sentence."
+            : "Translated on this device. The word did not leave the browser.";
+        }
+      } catch (err) {
+        if (seq !== lookupSeq) return;
+        glossZh.textContent = "Translation unavailable offline.";
+        glossNote.textContent = "Connect to look up a gloss, or keep reading without it.";
+      }
+    }
+
+    /* ---- speech ---- */
+    function speakWord(word) {
+      if (!word || !window.speechSynthesis) return;
+      var utter = new SpeechSynthesisUtterance(word);
+      utter.lang = sourceLang === "fr" ? "fr-FR" : "en-US";
+      utter.rate = 0.92;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    }
+
+    /* ---- modes: RSVP ---- */
+    var PUNCT_AFTER_RE = /^[\s]*([,.;:!?…。，；：？！]+["'”’»)\]}]*)/;
+
+    function punctAfter(btn) {
+      var next = btn.nextSibling;
+      while (next) {
+        if (next.nodeType === 3) {
+          var m = next.textContent.match(PUNCT_AFTER_RE);
+          return m ? m[1] : "";
+        }
+        if (next.nodeName === "BUTTON" || next.nodeName === "BR") return "";
+        next = next.nextSibling;
+      }
+      return "";
+    }
+
+    function breakAfter(btn) {
+      var node = btn.nextSibling;
+      while (node) {
+        if (node.nodeName === "BR") return "line";
+        if (node.nodeName === "BUTTON") return "";
+        if (node.nodeName === "SPAN") return "";
+        node = node.nextSibling;
+      }
+      var p = btn.closest("p");
+      if (!p) return "";
+      var words = p.querySelectorAll(".word");
+      if (words.length && words[words.length - 1] === btn) return "para";
+      return "";
+    }
+
+    function rsvpTokens() {
+      return wordNodes.map(function (btn) {
+        var punct = punctAfter(btn);
+        var brk = breakAfter(btn);
+        return {
+          word: btn.dataset.lookup || btn.textContent,
+          display: btn.textContent + punct,
+          punct: punct,
+          lineBreak: brk === "line",
+          paraBreak: brk === "para",
+          btn: btn
+        };
+      }).filter(function (item) { return item.word; });
+    }
+
+    function tokenDelay(token) {
+      var base = Math.round(60000 / rsvpWpm);
+      var mul = 1;
+      if (token && token.punct) {
+        if (/[.!?…。？！]/.test(token.punct)) mul = 2.1;
+        else if (/[,;:，；：]/.test(token.punct)) mul = 1.65;
+        else mul = 1.35;
+      }
+      if (token && token.lineBreak) mul = Math.max(mul, 2.9);
+      if (token && token.paraBreak) mul = Math.max(mul, 3.5);
+      return Math.round(base * mul);
+    }
+
+    function clearRsvpTimer() {
+      if (rsvpTimer) {
+        clearTimeout(rsvpTimer);
+        rsvpTimer = null;
+      }
+    }
+
+    function setRsvpPaused(paused) {
+      rsvpPaused = paused;
+      document.body.setAttribute("data-rsvp", paused ? "paused" : "playing");
+      btnRsvpToggle.textContent = paused ? "Play" : "Pause";
+      if (paused) clearRsvpTimer();
+    }
+
+    function stopRsvp(keepPaused) {
+      setRsvpPaused(true);
+      if (keepPaused) return;
+    }
+
+    function leadCount(word) {
+      var n = word.length;
+      if (n <= 1) return n;
+      if (n <= 3) return 1;
+      if (n <= 6) return 2;
+      return Math.min(Math.ceil(n * 0.4), n - 1);
+    }
+
+    function paintLeadWord(el, display) {
+      el.textContent = "";
+      var m = String(display || "").match(/^(.*?)([,.;:!?…。，；：？！]*["'”’»)\]}]*)$/);
+      var core = m ? m[1] : display;
+      var punct = m ? m[2] : "";
+      var n = leadCount(core);
+      var lead = document.createElement("span");
+      lead.className = "lead";
+      lead.textContent = core.slice(0, n);
+      el.appendChild(lead);
+      el.appendChild(document.createTextNode(core.slice(n) + punct));
+    }
+
+    function renderRsvpWord() {
+      var list = rsvpTokens();
+      rsvpSentenceEl.innerHTML = "";
+      if (!list.length) {
+        rsvpWordEl.textContent = "";
+        return;
+      }
+      rsvpIndex = clamp(rsvpIndex, 0, list.length - 1);
+      var item = list[rsvpIndex];
+      paintLeadWord(rsvpWordEl, item.display);
+      var sent = item.btn.closest(".sentence");
+      if (sent) {
+        var clone = sent.cloneNode(true);
+        var origWords = sent.querySelectorAll(".word");
+        var cloneWords = clone.querySelectorAll(".word");
+        var idx = Array.prototype.indexOf.call(origWords, item.btn);
+        for (var i = 0; i < cloneWords.length; i++) {
+          cloneWords[i].classList.toggle("is-active", i === idx);
+          cloneWords[i].tabIndex = rsvpPaused ? 0 : -1;
+        }
+        rsvpSentenceEl.appendChild(clone);
+        var sentIndex = Number(sent.dataset.index);
+        if (!isNaN(sentIndex)) currentSentenceIndex = sentIndex;
+      }
+      applySentenceHighlight();
+    }
+
+    function rsvpStep(delta) {
+      var list = rsvpTokens();
+      if (!list.length) return;
+      rsvpIndex = clamp(rsvpIndex + delta, 0, list.length - 1);
+      renderRsvpWord();
+      if (rsvpIndex >= list.length - 1) setRsvpPaused(true);
+    }
+
+    function startRsvpTimer() {
+      clearRsvpTimer();
+      var list = rsvpTokens();
+      var delay = tokenDelay(list[rsvpIndex]);
+      rsvpTimer = setTimeout(function () {
+        rsvpTimer = null;
+        var next = rsvpTokens();
+        if (rsvpIndex >= next.length - 1) {
+          setRsvpPaused(true);
+          return;
+        }
+        rsvpStep(1);
+        if (!rsvpPaused) startRsvpTimer();
+      }, delay);
+    }
+
+    function toggleRsvp() {
+      if (rsvpPaused) {
+        setRsvpPaused(false);
+        renderRsvpWord();
+        startRsvpTimer();
+      } else {
+        setRsvpPaused(true);
+        renderRsvpWord();
+      }
+    }
+
+    /* ---- ui ---- */
+    function startReading(raw) {
+      var cleaned = cleanupPastedText(raw);
+      if (!cleaned) return;
+      pasteInput.value = raw;
+      renderArticle(cleaned);
+      setScreen("reader");
+      if (attention === "rsvp") {
+        setRsvpPaused(true);
+        renderRsvpWord();
+      }
+    }
+
+    function updateStartEnabled() {
+      var empty = !pasteInput.value.trim();
+      btnStart.disabled = empty;
+      btnClear.disabled = empty;
+    }
+
+    pasteInput.addEventListener("input", updateStartEnabled);
+
+    btnStart.addEventListener("click", function () {
+      startReading(pasteInput.value);
+    });
+
+    btnClear.addEventListener("click", function () {
+      pasteInput.value = "";
+      updateStartEnabled();
+      pasteInput.focus();
+    });
+
+    document.getElementById("btn-new").addEventListener("click", function () {
+      stopRsvp(true);
+      setScreen("paste");
+      pasteInput.focus();
+    });
+
+    document.querySelectorAll('input[name="lang"]').forEach(function (input) {
+      input.addEventListener("change", function () {
+        if (!input.checked) return;
+        sourceLang = input.value;
+        localStorage.setItem(STORAGE_LANG, sourceLang);
+        lookupCache = Object.create(null);
+        if (selectedWord) showGloss(selectedWord, selectedSentenceText, null, false);
+      });
+    });
+
+    document.querySelectorAll('input[name="gloss"]').forEach(function (input) {
+      input.addEventListener("change", function () {
+        if (!input.checked) return;
+        glossLang = input.value;
+        localStorage.setItem(STORAGE_GLOSS, glossLang);
+        lookupCache = Object.create(null);
+        if (selectedWord) showGloss(selectedWord, selectedSentenceText, null, false);
+        else clearGloss();
+      });
+    });
+
+    document.querySelectorAll('input[name="attention"]').forEach(function (input) {
+      input.addEventListener("change", function () {
+        if (!input.checked) return;
+        setAttention(input.value);
+        if (input.value === "rsvp") {
+          glossZh.textContent = "Pause RSVP to look up the current word.";
+        }
+      });
+    });
+
+    document.getElementById("btn-font-down").addEventListener("click", function () {
+      fontSize = clamp(fontSize - FONT_STEP, FONT_MIN, FONT_MAX);
+      applyFont();
+    });
+
+    document.getElementById("btn-font-up").addEventListener("click", function () {
+      fontSize = clamp(fontSize + FONT_STEP, FONT_MIN, FONT_MAX);
+      applyFont();
+    });
+
+    document.getElementById("btn-sent-prev").addEventListener("click", function () {
+      jumpSentence(-1);
+    });
+
+    document.getElementById("btn-sent-next").addEventListener("click", function () {
+      jumpSentence(1);
+    });
+
+    article.addEventListener("click", function (event) {
+      var btn = event.target.closest(".word");
+      if (!btn) return;
+      if (attention === "rsvp" && !rsvpPaused) return;
+      var key = btn.dataset.lookup;
+      if (!key) return;
+      var sent = btn.closest(".sentence");
+      rsvpIndex = wordIndexOf(btn);
+      if (sent) setCurrentSentence(Number(sent.dataset.index) || 0, { preserveWord: true });
+      showGloss(key, sentenceText(sent), btn, false);
+    });
+
+    rsvpWordEl.addEventListener("click", function () {
+      if (attention !== "rsvp" || !rsvpPaused) return;
+      var list = rsvpTokens();
+      var item = list[rsvpIndex];
+      if (!item) return;
+      var sent = item.btn.closest(".sentence");
+      showGloss(item.word, sentenceText(sent), item.btn, false);
+    });
+
+    rsvpSentenceEl.addEventListener("click", function (event) {
+      if (attention !== "rsvp" || !rsvpPaused) return;
+      var btn = event.target.closest(".word");
+      if (!btn) return;
+      var cloneSent = btn.closest(".sentence");
+      if (!cloneSent) return;
+      var origSent = sentenceNodes[Number(cloneSent.dataset.index)];
+      if (!origSent) return;
+      var idx = Array.prototype.indexOf.call(cloneSent.querySelectorAll(".word"), btn);
+      var origBtn = origSent.querySelectorAll(".word")[idx];
+      if (!origBtn) return;
+      rsvpIndex = wordIndexOf(origBtn);
+      renderRsvpWord();
+      showGloss(origBtn.dataset.lookup, sentenceText(origSent), origBtn, false);
+    });
+
+    btnSpeak.addEventListener("click", function () {
+      speakWord(selectedWord);
+    });
+
+    btnRetranslate.addEventListener("click", function () {
+      if (!selectedWord || !selectedSentenceText) return;
+      var btn = article.querySelector(".word.is-active");
+      showGloss(selectedWord, selectedSentenceText, btn, true);
+    });
+
+    document.getElementById("btn-rsvp-prev").addEventListener("click", function () {
+      setRsvpPaused(true);
+      rsvpStep(-1);
+    });
+
+    btnRsvpToggle.addEventListener("click", toggleRsvp);
+
+    rsvpWpmInput.addEventListener("input", function () {
+      rsvpWpm = Number(rsvpWpmInput.value) || 240;
+      rsvpWpmLabel.textContent = String(rsvpWpm);
+      if (!rsvpPaused) startRsvpTimer();
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (document.body.getAttribute("data-screen") !== "reader") return;
+      if (event.target.closest("input, textarea, select")) return;
+      if (event.target.closest("button") && event.key === " ") return;
+
+      if (attention === "spotlight") {
+        if (event.key === "ArrowDown" || event.key === "ArrowRight" || event.key === "j") {
+          event.preventDefault();
+          jumpSentence(1);
+        }
+        if (event.key === "ArrowUp" || event.key === "ArrowLeft" || event.key === "k") {
+          event.preventDefault();
+          jumpSentence(-1);
+        }
+      }
+
+      if (attention === "rsvp") {
+        if (event.key === " ") {
+          event.preventDefault();
+          toggleRsvp();
+        }
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          setRsvpPaused(true);
+          rsvpStep(-1);
+        }
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          setRsvpPaused(true);
+          rsvpStep(1);
+        }
+      }
+    });
+
+    document.addEventListener("paste", function (event) {
+      if (document.body.getAttribute("data-screen") !== "reader") return;
+      if (event.target.closest("textarea, input")) return;
+      var text = event.clipboardData && event.clipboardData.getData("text/plain");
+      if (!text || !text.trim()) return;
+      event.preventDefault();
+      startReading(text);
+    });
+
+    loadPrefs();
+    updateStartEnabled();
+  })();
+  </script>
+</body>
+</html>
