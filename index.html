@@ -1047,7 +1047,11 @@
       return text.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
     }
 
-    function splitSentences(text) {
+    /* Vancouver-style citations often paste as "PAH.7–16 Although". Keep the
+       numbers with the previous sentence, then split before the next capital. */
+    var CITATION_GLUE_RE = /(\p{L}[.!?…]\d{1,3}(?:\s*[,;]\s*\d{1,3}|\s*[–—−‒-]\s*\d{1,3}){0,12})(\s+)(?=\p{Lu})/gu;
+
+    function splitSentencesRaw(text) {
       if (typeof Intl !== "undefined" && Intl.Segmenter) {
         var locale = sourceLang === "fr" ? "fr" : "en";
         var seg = new Intl.Segmenter(locale, { granularity: "sentence" });
@@ -1062,6 +1066,19 @@
         if (out.length) return out;
       }
       return text.split(/(?<=[.!?…])\s+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+
+    function splitSentences(text) {
+      var marked = String(text || "").replace(CITATION_GLUE_RE, "$1\n");
+      var chunks = marked.split("\n");
+      var out = [];
+      for (var i = 0; i < chunks.length; i++) {
+        var chunk = chunks[i].trim();
+        if (!chunk) continue;
+        var parts = splitSentencesRaw(chunk);
+        for (var j = 0; j < parts.length; j++) out.push(parts[j]);
+      }
+      return out;
     }
 
     function lookupKey(raw) {
